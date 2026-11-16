@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+    <span>Master Device ({{ devices|length }})</span>
+    <div class="d-flex gap-2">
+      <form method="post" action="{{ url_for('manual_sync_users') }}"><button class="btn btn-outline-primary btn-sm" {% if status.running %}disabled{% endif %}>Sync User Semua Device</button></form>
+      <form method="post" action="{{ url_for('manual_sync') }}"><button class="btn btn-primary btn-sm" {% if status.running %}disabled{% endif %}>Sync Absensi Semua Device</button></form>
+    </div>
+  </div>
+  <div class="table-responsive">
+  <table class="table table-sm table-hover align-middle mb-0">
+    <thead class="table-dark"><tr>
+      <th>Nama</th><th>IP:Port</th><th>MAC</th><th>Serial</th><th>Interval</th><th>Status</th><th>Sync terakhir</th><th>Sync user</th><th>Berikutnya</th><th>Scan</th><th class="text-end">Aksi</th>
+    </tr></thead>
+    <tbody>
+    {% for d in devices %}
+      <tr class="{{ '' if d.active else 'text-muted' }}">
+        <td class="fw-semibold">{{ d.name }}</td>
+        <td>{{ d.ip }}:{{ d.port }}</td>
+        <td class="small">{{ d.mac or '-' }}</td>
+        <td class="small">{{ d.serial or '-' }}</td>
+        <td>{{ d.interval_minutes }} mnt</td>
+        <td>
+          {% if d.id in running_ids %}<span class="badge bg-warning text-dark">sync...</span>
+          {% elif not d.active %}<span class="badge bg-secondary">nonaktif</span>
+          {% elif d.last_status == 'success' %}<span class="badge bg-success">OK</span>
+          {% elif d.last_status == 'failed' %}<span class="badge bg-danger" title="{{ d.last_message }}">gagal</span>
+          {% else %}<span class="badge bg-light text-dark">belum sync</span>{% endif %}
+        </td>
+        <td class="small">{{ d.last_sync_at or '-' }}</td>
+        <td class="small">{{ d.last_user_sync_at or '-' }}{% if d.users_due %} <span class="badge bg-info text-dark">antri</span>{% endif %}</td>
+        <td class="small">{{ d.next_sync_at if d.active and d.next_sync_at else '-' }}</td>
+        <td>{{ "{:,}".format(d.scans) }}</td>
+        <td class="text-end text-nowrap">
+          <form method="post" action="{{ url_for('manual_sync') }}" class="d-inline"><input type="hidden" name="device_id" value="{{ d.id }}"><button class="btn btn-outline-primary btn-sm" {% if d.id in running_ids %}disabled{% endif %}>Sync</button></form>
+          <form method="post" action="{{ url_for('manual_sync_users') }}" class="d-inline"><input type="hidden" name="device_id" value="{{ d.id }}"><button class="btn btn-outline-info btn-sm" {% if d.id in running_ids %}disabled{% endif %}>User</button></form>
+          <form method="post" action="{{ url_for('device_test', device_id=d.id) }}" class="d-inline"><button class="btn btn-outline-secondary btn-sm">Tes</button></form>
+          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('device_edit', device_id=d.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('device_toggle', device_id=d.id) }}" class="d-inline"><button class="btn btn-outline-warning btn-sm">{{ 'Nonaktifkan' if d.active else 'Aktifkan' }}</button></form>
+          <form method="post" action="{{ url_for('device_delete', device_id=d.id) }}" class="d-inline" onsubmit="return confirm('Hapus device {{ d.name }}?')"><button class="btn btn-outline-danger btn-sm">Hapus</button></form>
+        </td>
+      </tr>
+      {% if d.last_status == 'failed' %}<tr class="table-danger"><td colspan="11" class="small py-1">⚠ {{ d.last_message }}</td></tr>{% endif %}
+    {% else %}
+      <tr><td colspan="11" class="text-center text-muted py-4">Belum ada device. Tambahkan di bawah.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-semibold">Tambah Device</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('device_add') }}" class="row g-3">
+      <div class="col-md-3"><label class="form-label">Nama / Lokasi</label><input name="name" class="form-control" placeholder="Pabrik - Gerbang 1" required></div>
+      <div class="col-md-3"><label class="form-label">IP</label><input name="ip" class="form-control" placeholder="192.168.18.200" required></div>
+      <div class="col-md-1"><label class="form-label">Port</label><input type="number" name="port" value="4370" class="form-control"></div>
+      <div class="col-md-2"><label class="form-label">Comm Key</label><input type="number" name="comm_password" value="0" class="form-control"></div>
+      <div class="col-md-2"><label class="form-label">Interval (mnt)</label><input type="number" min="1" name="interval_minutes" value="10" class="form-control" required></div>
+      <div class="col-md-1 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="active" id="act" checked><label class="form-check-label" for="act">Aktif</label></div></div>
+      <div class="col-12"><button class="btn btn-success">Tambah Device</button>
+        <span class="form-text ms-2">MAC, serial & firmware terisi otomatis dari mesin.</span></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

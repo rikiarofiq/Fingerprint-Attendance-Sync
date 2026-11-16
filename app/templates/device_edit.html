@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-6">
+<div class="card">
+  <div class="card-header fw-semibold">Edit Device: {{ d.name }}</div>
+  <div class="card-body">
+    <form method="post">
+      <div class="mb-3"><label class="form-label">Nama / Lokasi</label><input name="name" value="{{ d.name }}" class="form-control" required></div>
+      <div class="mb-3"><label class="form-label">IP</label><input name="ip" value="{{ d.ip }}" class="form-control" required></div>
+      <div class="row">
+        <div class="col mb-3"><label class="form-label">Port</label><input type="number" name="port" value="{{ d.port }}" class="form-control"></div>
+        <div class="col mb-3"><label class="form-label">Comm Key</label><input type="number" name="comm_password" value="{{ d.comm_password }}" class="form-control"></div>
+      </div>
+      <div class="mb-3"><label class="form-label">Interval sync (menit)</label><input type="number" min="1" name="interval_minutes" value="{{ d.interval_minutes }}" class="form-control" required></div>
+      <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="active" id="act" {% if d.active %}checked{% endif %}><label class="form-check-label" for="act">Aktif (ikut sync otomatis)</label></div>
+      <div class="small text-muted mb-3">MAC: {{ d.mac or '-' }} · Serial: {{ d.serial or '-' }} · Firmware: {{ d.firmware or '-' }}</div>
+      <button class="btn btn-primary">Simpan</button>
+      <a class="btn btn-link" href="{{ url_for('devices_page') }}">Batal</a>
+    </form>
+  </div>
+</div>
+</div></div>
+{% endblock %}

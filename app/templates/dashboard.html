@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-2"><div class="card"><div class="card-body">
+    <div class="text-muted small">Total scan</div><div class="fs-3 fw-bold">{{ "{:,}".format(stats.logs) }}</div></div></div></div>
+  <div class="col-md-2"><div class="card"><div class="card-body">
+    <div class="text-muted small">Device aktif</div><div class="fs-3 fw-bold">{{ stats.devs_active }}<span class="fs-6 text-muted"> / {{ stats.devs }}</span></div>
+    {% if stats.devs_failed %}<a href="{{ url_for('devices_page') }}" class="small text-danger">{{ stats.devs_failed }} gagal sync</a>{% endif %}</div></div></div>
+  <div class="col-md-8"><div class="card"><div class="card-body">
+    <div class="text-muted small mb-2">Ambil data manual (tanggal opsional, kosongkan = semua data di mesin)</div>
+    <form method="post" action="{{ url_for('manual_sync') }}" class="row g-2">
+      <div class="col-md-4"><select name="device_id" class="form-select form-select-sm"><option value="">Semua device aktif</option>
+        {% for d in devices %}<option value="{{ d.id }}">{{ d.name }} ({{ d.ip }})</option>{% endfor %}</select></div>
+      <div class="col"><input type="date" name="sync_from" class="form-control form-control-sm"></div>
+      <div class="col"><input type="date" name="sync_to" class="form-control form-control-sm"></div>
+      <div class="col-auto"><button class="btn btn-primary btn-sm">Sync Sekarang</button></div>
+    </form>
+  </div></div></div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header fw-semibold">Data Absensi</div>
+  <div class="card-body">
+    <form class="row g-2 mb-3">
+      <div class="col-md-2"><label class="form-label small">Dari</label><input type="date" name="from" value="{{ f_from }}" class="form-control form-control-sm"></div>
+      <div class="col-md-2"><label class="form-label small">Sampai</label><input type="date" name="to" value="{{ f_to }}" class="form-control form-control-sm"></div>
+      <div class="col-md-3"><label class="form-label small">Device</label><select name="device" class="form-select form-select-sm"><option value="">Semua</option>{% for d in devices %}<option value="{{ d.id }}" {% if dev==d.id|string %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="form-label small">ID / Nama</label><input name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="contoh: 7 atau riki arofiq"></div>
+      <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-dark btn-sm w-100">Filter</button></div>
+    </form>
+    <div class="small text-muted mb-2">{{ total }} data</div>
+    <div class="table-responsive">
+    <table class="table table-sm table-striped table-hover">
+      <thead class="table-dark"><tr><th>Tanggal</th><th>Jam</th><th>ID</th><th>Nama</th><th>Status</th><th>Verifikasi</th><th>Mesin</th><th>IP</th><th>MAC</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.scan_time.strftime('%Y-%m-%d') }}</td><td>{{ r.scan_time.strftime('%H:%M:%S') }}</td>
+            <td>{{ r.user_id }}</td><td>{{ r.name or '' }}</td><td>{{ r.status }}</td><td>{{ r.punch }}</td><td>{{ r.device_name }}</td><td class="small text-muted">{{ r.device_ip }}</td><td class="small text-muted">{{ r.device_mac or "-" }}</td></tr>
+      {% else %}
+        <tr><td colspan="9" class="text-center text-muted">Tidak ada data</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% set pages = ((total + per_page - 1) // per_page) %}
+    {% if pages > 1 %}
+    <nav><ul class="pagination pagination-sm">
+      {% if page > 1 %}<li class="page-item"><a class="page-link" href="?from={{ f_from }}&to={{ f_to }}&q={{ q|urlencode }}&device={{ dev }}&page={{ page-1 }}">&laquo; Prev</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Hal {{ page }} / {{ pages }}</span></li>
+      {% if page < pages %}<li class="page-item"><a class="page-link" href="?from={{ f_from }}&to={{ f_to }}&q={{ q|urlencode }}&device={{ dev }}&page={{ page+1 }}">Next &raquo;</a></li>{% endif %}
+    </ul></nav>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header fw-semibold">Riwayat Sync (15 terakhir)</div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Mulai</th><th>Selesai</th><th>Device</th><th>Pemicu</th><th>Status</th><th>Dibaca</th><th>Baru</th><th>Pesan</th></tr></thead>
+      <tbody>
+      {% for h in history %}
+        <tr><td>{{ h.started_at }}</td><td>{{ h.finished_at or '-' }}</td><td>{{ h.device_name or '-' }}</td><td>{{ h.trigger_type }}</td>
+          <td><span class="badge bg-{{ {'success':'success','failed':'danger','running':'warning'}.get(h.status,'secondary') }}">{{ h.status }}</span></td>
+          <td>{{ h.fetched }}</td><td>{{ h.inserted }}</td><td class="small">{{ h.message or '' }}</td></tr>
+      {% else %}
+        <tr><td colspan="8" class="text-center text-muted">Belum ada sync</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

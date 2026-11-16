@@ -1,0 +1,22 @@
+# Rahasia
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Log & data lokal
+*.log
+*.sql.gz
+*.sql
+data/

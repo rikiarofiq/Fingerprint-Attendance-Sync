@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ARA Absensi</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand navbar-dark bg-dark mb-4">
+  <div class="container-fluid px-4 px-xl-5">
+    <a class="navbar-brand" href="{{ url_for('dashboard') }}">ARA Absensi</a>
+    <div class="navbar-nav">
+      <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a class="nav-link {% if request.endpoint in ('devices_page','device_edit') %}active{% endif %}" href="{{ url_for('devices_page') }}">Master Device</a>
+    </div>
+    <span class="navbar-text small" id="sync-badge">
+      {% if status.running %}<span class="badge bg-warning text-dark">Sync berjalan ({{ status.running_ids|length }} device)...</span>
+      {% else %}<span class="badge bg-secondary">Idle</span>{% endif %}
+    </span>
+  </div>
+</nav>
+<div class="container-fluid px-4 px-xl-5 pb-5">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="alert alert-{{ cat }} alert-dismissible">{{ m }}<button class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+<script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+<script>
+  // Saat sync berjalan, cek status tiap 3 detik lalu reload halaman ketika selesai
+  let wasRunning = {{ 'true' if status.running else 'false' }};
+  async function poll() {
+    try {
+      const s = await (await fetch('/api/status')).json();
+      if (wasRunning && !s.running) { location.reload(); return; }
+      wasRunning = s.running;
+    } catch (e) {}
+    setTimeout(poll, wasRunning ? 3000 : 15000);
+  }
+  setTimeout(poll, wasRunning ? 3000 : 15000);
+</script>
+</body>
+</html>
